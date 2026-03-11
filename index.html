@@ -20,7 +20,7 @@
 </head>
 <body>
     <div id="ui">
-        <p>Tap or Press Any Key to Light the Wicks</p>
+        <p>Click Button to Light the Wicks</p>
     </div>
 
     <script type="importmap">
@@ -247,6 +247,15 @@
         let lastEventTime = 0;
 
         function handleInteraction(e) {
+            // Prevent default behavior for keyboard events (like scrolling on TV remotes)
+            if (e && e.type === 'keydown') {
+                // Ignore system shortcuts like F5, F12, Ctrl+R so the user can still refresh/debug
+                if (e.key === 'F5' || e.key === 'F12' || e.ctrlKey || e.metaKey || e.altKey) {
+                    return; 
+                }
+                e.preventDefault();
+            }
+
             // Prevent double-triggering (e.g., pointerdown + keydown) within 150ms
             const now = Date.now();
             if (now - lastEventTime < 150) return;
