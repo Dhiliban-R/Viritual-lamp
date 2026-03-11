@@ -20,7 +20,7 @@
 </head>
 <body>
     <div id="ui">
-        <p>Tap to Light the Wicks</p>
+        <p>Tap or Press Any Key to Light the Wicks</p>
     </div>
 
     <script type="importmap">
@@ -247,13 +247,13 @@
         let lastEventTime = 0;
 
         function handleInteraction(e) {
-            // Prevent double-triggering (e.g., pointerdown + click) within 200ms
+            // Prevent double-triggering (e.g., pointerdown + keydown) within 150ms
             const now = Date.now();
-            if (now - lastEventTime < 200) return;
+            if (now - lastEventTime < 150) return;
             lastEventTime = now;
 
-            // Ignore non-primary mouse buttons
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            // Ignore non-primary mouse buttons (only for pointer events)
+            if (e && e.type === 'pointerdown' && e.pointerType === 'mouse' && e.button !== 0) return;
 
             // Clear any existing timer if we are manually changing the state
             if (burnTimeout) {
@@ -286,6 +286,7 @@
         }
 
         window.addEventListener('pointerdown', handleInteraction);
+        window.addEventListener('keydown', handleInteraction);
 
         // Use stable THREE.Clock for timing
         const clock = new THREE.Clock();
