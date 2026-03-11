@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viritual Kuthuvilakku</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050201; font-family: 'Palatino', serif; }
+        canvas { display: block; outline: none; }
+        #ui {
+            position: absolute;
+            top: 6%;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+        p { font-size: 1rem; opacity: 0.5; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <p>Tap to Light the Wicks</p>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+        // --- Master Configuration ---
+        const BLOOM_LAYER = 1;
+        const bloomLayer = new THREE.Layers();
+        bloomLayer.set(BLOOM_LAYER);
+
+        const darkBase = new THREE.Color(0x050201);
+        const copperAmber = new THREE.Color(0x2a1005); 
+
+        // --- Core Engine ---
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0; 
+        document.body.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        scene.background = darkBase;
+        scene.fog = new THREE.FogExp2(darkBase, 0.01);
+
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 45, 75); // Slightly higher and further back for a better overview
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = false; // Stopped rotation
+        controls.target.set(0, 18, 0); // Focused slightly higher on the wicks
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+        const ambient = new THREE.AmbientLight(0xfff0e0, 0.2);
+        scene.add(ambient);
+
+        // --- Brass Model (Nachiarkoil) ---
+        const brassMaterial = new THREE.MeshStandardMaterial({
+            color: 0xD4AF37, metalness: 1.0, roughness: 0.35, envMapIntensity: 0.6 
+        });
+
+        function buildLamp() {
+            const pts = [];
+            pts.push(new THREE.Vector2(0, 0), new THREE.Vector2(7.0, 0), new THREE.Vector2(7.0, 0.6), new THREE.Vector2(6.5, 0.6), new THREE.Vector2(6.5, 1.2), new THREE.Vector2(5.5, 1.2), new THREE.Vector2(5.0, 1.8), new THREE.Vector2(3.5, 2.5), new THREE.Vector2(2.0, 3.2), new THREE.Vector2(1.2, 3.8));
+            pts.push(new THREE.Vector2(0.9, 4.0), new THREE.Vector2(0.8, 8.0), new THREE.Vector2(1.4, 8.3), new THREE.Vector2(1.6, 8.6), new THREE.Vector2(1.4, 8.9), new THREE.Vector2(0.8, 9.2), new THREE.Vector2(0.8, 13.2), new THREE.Vector2(1.4, 13.5), new THREE.Vector2(1.6, 13.8), new THREE.Vector2(1.4, 14.1), new THREE.Vector2(0.8, 14.4), new THREE.Vector2(0.8, 18.4), new THREE.Vector2(1.4, 18.7), new THREE.Vector2(1.6, 19.0), new THREE.Vector2(1.4, 19.3), new THREE.Vector2(0.9, 19.8), new THREE.Vector2(1.2, 20.5));
+            pts.push(new THREE.Vector2(2.5, 21.0), new THREE.Vector2(4.5, 21.5), new THREE.Vector2(5.5, 22.5), new THREE.Vector2(5.1, 22.8), new THREE.Vector2(4.0, 22.0), new THREE.Vector2(1.5, 21.2), new THREE.Vector2(0, 21.2));
+
+            const body = new THREE.Mesh(new THREE.LatheGeometry(pts, 128), brassMaterial);
+            body.castShadow = true; body.receiveShadow = true;
+            scene.add(body);
+
+            const kalasamPts = [new THREE.Vector2(0, 21.2), new THREE.Vector2(1.2, 21.5), new THREE.Vector2(0.8, 22.5), new THREE.Vector2(1.5, 23.5), new THREE.Vector2(1.0, 24.0), new THREE.Vector2(1.3, 25.0), new THREE.Vector2(0.5, 25.5), new THREE.Vector2(0.8, 26.5), new THREE.Vector2(0.1, 28.0), new THREE.Vector2(0, 28.0)];
+            const kalasam = new THREE.Mesh(new THREE.LatheGeometry(kalasamPts, 64), brassMaterial);
+            kalasam.castShadow = true;
+            scene.add(kalasam);
+        }
+        buildLamp();
+
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x020100, roughness: 0.15, metalness: 0.2 })).rotateX(-Math.PI/2));
+
+        // --- ASYMMETRIC LEANING FLAME SHADER ---
+        const flameVertex = `
+            varying vec2 vUv;
+            uniform float time;
+            uniform vec3 outwardDir;
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+            float noise(vec2 p) {
+                vec2 i = floor(p); vec2 f = fract(p);
+                float a = hash(i); float b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0)); float d = hash(i + vec2(1.0, 1.0));
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                float h = smoothstep(0.0, 1.0, pos.y);
+                float lean = (1.0 - pow(h, 0.5)) * 0.4;
+                pos += outwardDir * lean;
+                float n = noise(vec2(pos.y * 2.0, time * 3.5));
+                pos.x += sin(time * 5.0 + pos.y * 3.0) * 0.12 * h + (n - 0.5) * 0.2 * h;
+                pos.z += cos(time * 4.5 + pos.y * 2.5) * 0.12 * h + (n - 0.5) * 0.2 * h;
+                pos.y *= 1.0 + sin(time * 12.0) * 0.05 * h;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `;
+
+        const flameFragment = `
+            varying vec2 vUv;
+            uniform float time;
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+            float noise(vec2 p) {
+                vec2 i = floor(p); vec2 f = fract(p);
+                float a = hash(i); float b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0)); float d = hash(i + vec2(1.0, 1.0));
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
+            float fbm(vec2 p) {
+                float v = 0.0; float a = 0.5;
+                for (int i = 0; i < 4; i++) {
+                    v += a * noise(p); p *= 2.0; a *= 0.5;
+                }
+                return v;
+            }
+            void main() {
+                vec2 uv = vUv;
+                float n = fbm(uv * 4.0 - vec2(0.0, time * 4.0));
+                float dx = (uv.x - 0.5);
+                float dy = (uv.y - 0.15);
+                float dist = sqrt(dx * dx * 2.8 + dy * dy * 0.7) + (n - 0.5) * 0.15;
+                float alpha = smoothstep(0.45, 0.02, dist);
+                vec3 saffronRed = vec3(6.0, 0.1, 0.0);
+                vec3 zoneGold = vec3(8.0, 5.0, 0.2);
+                vec3 hotWhite = vec3(12.0, 12.0, 10.0);
+                vec3 color = mix(saffronRed, zoneGold, smoothstep(0.4, 0.12, dist));
+                color = mix(color, hotWhite, smoothstep(0.1, 0.0, dist));
+                float blueMask = smoothstep(0.2, 0.0, uv.y) * smoothstep(0.4, 0.1, abs(uv.x - 0.5));
+                color = mix(color, vec3(0.0, 0.5, 3.0), blueMask);
+                alpha *= smoothstep(1.0, 0.3, uv.y);
+                alpha *= (0.7 + n * 0.3);
+                gl_FragColor = vec4(color, alpha);
+            }
+        `;
+
+        // --- Selective Bloom ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.5, 0.1);
+        const bloomComposer = new EffectComposer(renderer);
+        bloomComposer.renderToScreen = false;
+        bloomComposer.addPass(renderScene);
+        bloomComposer.addPass(bloomPass);
+
+        const finalPass = new ShaderPass(
+            new THREE.ShaderMaterial({
+                uniforms: { baseTexture: { value: null }, bloomTexture: { value: bloomComposer.renderTarget2.texture } },
+                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+                fragmentShader: `uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main() { gl_FragColor = texture2D(baseTexture, vUv) + texture2D(bloomTexture, vUv); }`,
+            }), 'baseTexture'
+        );
+
+        const finalComposer = new EffectComposer(renderer);
+        finalComposer.addPass(renderScene);
+        finalComposer.addPass(finalPass);
+        finalComposer.addPass(new OutputPass());
+
+        const wicks = [];
+        const numWicks = 5;
+        const wickRadius = 4.8; 
+        const wickHeight = 23.0;
+        let litCount = 0;
+
+        const flameGeom = new THREE.SphereGeometry(0.45, 32, 32);
+        flameGeom.scale(1.2, 4.2, 1.2);
+        flameGeom.translate(0, 1.0, 0);
+
+        for(let i = 0; i < numWicks; i++) {
+            const angle = (i / numWicks) * Math.PI * 2;
+            const x = Math.cos(angle) * wickRadius;
+            const z = Math.sin(angle) * wickRadius;
+            const dir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle)).normalize();
+
+            scene.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8), new THREE.MeshStandardMaterial({ color: 0x111111 })).translateOnAxis(new THREE.Vector3(x, wickHeight - 0.2, z), 1));
+
+            const fMat = new THREE.ShaderMaterial({
+                uniforms: { time: { value: 0 }, outwardDir: { value: dir } }, 
+                vertexShader: flameVertex, fragmentShader: flameFragment,
+                transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+            const flame = new THREE.Mesh(flameGeom, fMat);
+            flame.position.set(x, wickHeight + 0.1, z);
+            flame.visible = false;
+            flame.layers.enable(BLOOM_LAYER);
+            scene.add(flame);
+
+            const light = new THREE.PointLight(0xffaa00, 0, 30, 2.5);
+            light.position.set(x, wickHeight + 2.0, z);
+            light.castShadow = true;
+            scene.add(light);
+
+            wicks.push({ flame, light, offset: Math.random() * 100 });
+        }
+
+        const darkMaterial = new THREE.MeshBasicMaterial({ color: 'black' });
+        const materials = {};
+
+        function darkenNonBloomed(obj) {
+            if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+                materials[obj.uuid] = obj.material;
+                obj.material = darkMaterial;
+            }
+        }
+
+        function restoreMaterial(obj) {
+            if (materials[obj.uuid]) {
+                obj.material = materials[obj.uuid];
+                delete materials[obj.uuid];
+            }
+        }
+
+        let burnStartTime = null;
+        let burnTimeout = null;
+        let lastEventTime = 0;
+
+        function handleInteraction(e) {
+            // Prevent double-triggering (e.g., pointerdown + click) within 200ms
+            const now = Date.now();
+            if (now - lastEventTime < 200) return;
+            lastEventTime = now;
+
+            // Ignore non-primary mouse buttons
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+            // Clear any existing timer if we are manually changing the state
+            if (burnTimeout) {
+                clearTimeout(burnTimeout);
+                burnTimeout = null;
+                burnStartTime = null;
+            }
+
+            litCount = (litCount + 1) % (numWicks + 1);
+            
+            const ratio = litCount / numWicks;
+            scene.background.lerpColors(darkBase, copperAmber, ratio * 0.4);
+            ambient.intensity = 0.2 + (ratio * 1.0);
+            wicks.forEach((w, i) => w.flame.visible = i < litCount);
+
+            if (litCount === numWicks) {
+                burnStartTime = Date.now();
+                console.log("Lamp fully lit. Starting 10-minute burn.");
+                
+                burnTimeout = setTimeout(() => {
+                    console.log("10 minutes elapsed. Resetting lamp.");
+                    litCount = 0;
+                    scene.background.copy(darkBase);
+                    ambient.intensity = 0.2;
+                    wicks.forEach((w) => w.flame.visible = false);
+                    burnTimeout = null;
+                    burnStartTime = null;
+                }, 600000); 
+            }
+        }
+
+        window.addEventListener('pointerdown', handleInteraction);
+
+        // Use stable THREE.Clock for timing
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            controls.update();
+            
+            wicks.forEach((w) => {
+                if(w.flame.visible) {
+                    w.flame.material.uniforms.time.value = elapsedTime + w.offset;
+                    // Stable intensity, only random flicker within a range
+                    w.light.intensity = 20 + Math.random() * 8;
+                } else { w.light.intensity = 0; }
+            });
+
+            scene.traverse(darkenNonBloomed);
+            bloomComposer.render();
+            scene.traverse(restoreMaterial);
+            finalComposer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            bloomComposer.setSize(window.innerWidth, window.innerHeight);
+            finalComposer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
