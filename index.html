@@ -20,7 +20,7 @@
             font-family: 'Cinzel', serif;
             font-size: 3.5rem; 
             font-weight: 900;
-            letter-spacing: 12px; 
+            letter-spacing: 6px; 
             color: #D4AF37; 
             text-transform: uppercase; 
             margin: 0;
@@ -31,6 +31,37 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 0.9; transform: translateY(0); }
+        }
+        #fullscreen-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(212, 175, 55, 0.15);
+            color: #D4AF37;
+            border: 1px solid rgba(212, 175, 55, 0.6);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            outline: none;
+        }
+        #fullscreen-btn:hover {
+            background: rgba(212, 175, 55, 0.35);
+            border-color: #D4AF37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            transform: scale(1.1);
+        }
+        #fullscreen-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
         }
     </style>
 </head>
@@ -263,6 +294,9 @@
         let lastEventTime = 0;
 
         function handleInteraction(e) {
+            // If the user clicked the fullscreen button, don't trigger lamp interaction
+            if (e && e.target && e.target.id === 'fullscreen-btn') return;
+
             // Prevent default behavior for keyboard events (like scrolling on TV remotes)
             if (e && e.type === 'keydown') {
                 // Ignore system shortcuts like F5, F12, Ctrl+R so the user can still refresh/debug
@@ -312,6 +346,47 @@
 
         window.addEventListener('pointerdown', handleInteraction);
         window.addEventListener('keydown', handleInteraction);
+
+        // --- Fullscreen Support ---
+        const fsBtn = document.createElement('button');
+        fsBtn.id = 'fullscreen-btn';
+        
+        const fsIcon = `<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
+        const exitFsIcon = `<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`;
+        
+        fsBtn.innerHTML = fsIcon;
+        document.body.appendChild(fsBtn);
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                const docEl = document.documentElement;
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen();
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                } else if (docEl.msRequestFullscreen) {
+                    docEl.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        fsBtn.addEventListener('click', toggleFullScreen);
+
+        const updateFsIcon = () => {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            fsBtn.innerHTML = isFs ? exitFsIcon : fsIcon;
+        };
+
+        document.addEventListener('fullscreenchange', updateFsIcon);
+        document.addEventListener('webkitfullscreenchange', updateFsIcon);
 
         // Use stable THREE.Clock for timing
         const clock = new THREE.Clock();
