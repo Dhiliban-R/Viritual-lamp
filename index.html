@@ -294,8 +294,8 @@
         let lastEventTime = 0;
 
         function handleInteraction(e) {
-            // If the user clicked the fullscreen button, don't trigger lamp interaction
-            if (e && e.target && e.target.id === 'fullscreen-btn') return;
+            // If the user clicked the fullscreen button or its children, don't trigger lamp interaction
+            if (e && e.target && e.target.closest && e.target.closest('#fullscreen-btn')) return;
 
             // Prevent default behavior for keyboard events (like scrolling on TV remotes)
             if (e && e.type === 'keydown') {
@@ -378,7 +378,12 @@
             }
         }
 
-        fsBtn.addEventListener('click', toggleFullScreen);
+        fsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFullScreen();
+        });
+        fsBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+        fsBtn.addEventListener('mousedown', (e) => e.stopPropagation());
 
         const updateFsIcon = () => {
             const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
