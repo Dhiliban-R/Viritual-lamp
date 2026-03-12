@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Viritual Kuthuvilakku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; overflow: hidden; background: #050201; font-family: 'Palatino', serif; }
         canvas { display: block; outline: none; }
@@ -15,12 +16,27 @@
             pointer-events: none;
             z-index: 10;
         }
-        p { font-size: 1rem; opacity: 0.5; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+        #ui p { 
+            font-family: 'Cinzel', serif;
+            font-size: 3.5rem; 
+            font-weight: 900;
+            letter-spacing: 12px; 
+            color: #D4AF37; 
+            text-transform: uppercase; 
+            margin: 0;
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.8);
+            opacity: 0.9;
+            animation: fadeIn 3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 0.9; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
     <div id="ui">
-        <p>Click Button to Light the Wicks</p>
+        <p>Welcome to Revive 2K26</p>
     </div>
 
     <script type="importmap">
